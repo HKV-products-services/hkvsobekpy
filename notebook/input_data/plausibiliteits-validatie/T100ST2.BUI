@@ -1,0 +1,115 @@
+*Name of this file: \Sobek213\FIXED\T100ST2.BUI
+*Date and time of construction: 05-12-2017   13:15:39
+*Enige algemene wenken:
+*Gebruik de default dataset (1) of de volledige reeks (0) voor overige invoer
+1
+*Aantal stations
+ 3 
+*Namen van stations
+'De Bilt'
+'Verdamping'
+'De Bilt Test'
+*Aantal gebeurtenissen (omdat het 1 bui betreft is dit altijd 1)
+*en het aantal seconden per waarnemingstijdstap
+ 1  3600 
+*Elke commentaarregel wordt begonnen met een * (asteriks).
+*Eerste record bevat startdatum en -tijd, lengte van de gebeurtenis in dd hh mm ss
+*Het format is: yyyymmdd:hhmmss:ddhhmmss
+*Daarna voor elk station de neerslag in mm per tijdstap.
+ 1950 1 1 0 0 0 4 0 0 0
+  0  0  0
+  .20691  0  .248292
+  .51183  0  .614196
+  .60984  0  .731808
+  .41382  0  .496584
+  .86031  0  1.032372
+  1.45926  0  1.751112
+  1.11078  0  1.332936
+  .47916  0  .574992
+  .84942  0  1.019304
+  1.24146  0  1.489752
+  .46827  0  .561924
+  1.94931  0  2.339172
+  .37026  0  .444312
+  1.29591  0  1.555092
+  1.87767  0  2.253204
+  .66326  0  .795912
+  1.91504  0  2.298048
+  2.48488  0  2.981856
+  1.7936  0  2.15232
+  2.10187  0  2.522244
+  5.73578  0  6.882936
+  5.87591  0  7.051092
+  18.95424  0  22.74509
+  10.39727  0  12.47672
+  6.93152  0  8.317824
+  1.89636  0  2.275632
+  3.46576  0  4.158912
+  1.70952  0  2.051424
+  3.06407  0  3.676884
+  1.75623  0  2.107476
+  1.14902  0  1.378824
+  .92482  0  1.109784
+  1.3452  0  1.61424
+  1.121  0  1.3452
+  1.21442  0  1.457304
+  .87812  0  1.053744
+  .95285  0  1.14342
+  2.09253  0  2.511036
+  .62073  0  .744876
+  .46827  0  .561924
+  .88209  0  1.058508
+  .67518  0  .810216
+  0  0  0
+  .53361  0  .640332
+  .29403  0  .352836
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
+  0  0  0
