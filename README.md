@@ -12,16 +12,17 @@ install using pypip:
 `pip install hkvsobekpy`
 
 # dependencies
-hkvsobekpy requires the following packages to be installed:
-- tqdm
-- fire
+hkvsobekpy will install `tqdm` and `fire` as dependencies. The other required packgages are not included since Windows cannot compile these packages from source. These are:
 - numpy
 - scipy
 - pandas
-- geopandas (requires Fiona, GDAL and shapely)
+- Fiona
+- GDAL
+- shapely
+- pyproj
+- geopandas
 
-The package will install `tqdm` and `fire` as dependencies, the other packgages are not included as Windows cannot compile these packages from source. 
-Go to https://www.lfd.uci.edu/~gohlke/pythonlibs to download these packages on Windows (and use `pip install path/to/package.whl`), or use `pip install` directly under linux.
+Go to https://www.lfd.uci.edu/~gohlke/pythonlibs to download these packages on Windows (and use `pip install path/to/package.whl` to install the package).
 
 # usage package
 Import the package and define path to his-file
