@@ -110,7 +110,7 @@ class __waterlevelstat_class(object):
             warnings.filterwarnings("error")
             _r_squared = 1 - (squared_error_regr/squared_error_y_mean)
         except RuntimeWarning:
-            _r_squared = 0
+            _r_squared = 'undefined'
         return _r_squared
 
     def _r_squared(self,xs,ys):
@@ -381,7 +381,12 @@ class __waterlevelstat_class(object):
                color='#F5AC1B', linestyle='none', marker='o', markersize=8, markerfacecoloralt='white')
                  
         # plot r**2 rechtsbovenin
-        ax.text(0.975, 0.975, '$r^2$: '+str(np.round(S1_r_squared,2)),
+        if type(S1_r_squared) is str:
+            label_r_squared = S1_r_squared
+        else:
+            label_r_squared = str(np.round(S1_r_squared,2))
+            
+        ax.text(0.975, 0.975, '$r^2$: '+label_r_squared,
                 horizontalalignment='right',
                 verticalalignment='top',
                 transform=ax.transAxes)
@@ -752,6 +757,10 @@ class __waterlevelstat_class(object):
         # append to dataframe 1
         stat_object.stats.df_table1 = stat_object.stats.df_table1.append(table1_list, ignore_index=True)
         
+        if type(stat_object.stats.stap1.r_squared) is not str:
+            label_r_squared_table = round(stat_object.stats.stap1.r_squared,decimals)
+        else:
+            label_r_squared_table = stat_object.stats.stap1.r_squared
         try:
             table2_list.append({shp_key:stat_object.stats.stap1.ID,
                                 'T10_LANDELIJK':stat_object.stats.df_table1[(stat_object.stats.df_table1['T'] == 10) & 
@@ -767,8 +776,8 @@ class __waterlevelstat_class(object):
                                 'T50':stat_object.stats.df_table1[(stat_object.stats.df_table1['T'] == 50) & 
                                                 (stat_object.stats.df_table1[shp_key] == stat_object.stats.stap1.ID)]['H'].values[0],
                                 'T100':stat_object.stats.df_table1[(stat_object.stats.df_table1['T'] == 100) & 
-                                                (stat_object.stats.df_table1[shp_key] == stat_object.stats.stap1.ID)]['H'].values[0],
-                                'r^2':round(stat_object.stats.stap1.r_squared,decimals),
+                                                (stat_object.stats.df_table1[shp_key] == stat_object.stats.stap1.ID)]['H'].values[0],                                
+                                'r^2':label_r_squared_table,                                
                                 'a':round(stat_object.stats.stap1.a,decimals),
                                 'b':round(stat_object.stats.stap1.b,decimals)})    
         except (ValueError,IndexError):

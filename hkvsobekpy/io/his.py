@@ -398,6 +398,10 @@ class __his_class(object):
             key = df.columns.levels[1][0]
             level = df.columns.names[1]
             slice_col = df.columns.levels[0][0]
+
+            # next get the year maxima of the remaining gebeurtenissen
+            idx = df.xs(key=key, level=level, axis=1).groupby([df.index.year])[slice_col].transform(max) == df.xs(key=key, level=level, axis=1)[slice_col]
+            df = df[idx]            
             
             # if there are multiple events in a single year with same value take the first
             df_unique = pd.DataFrame(df.index, columns=['date'])
@@ -405,10 +409,7 @@ class __his_class(object):
             df_unique = df_unique.groupby('index').first()
             slice_unique_values = df_unique['date'].values
             df = df.loc[slice_unique_values]
-            
-            # next get the year maxima of the remaining gebeurtenissen
-            idx = df.xs(key=key, level=level, axis=1).groupby([df.index.year])[slice_col].transform(max) == df.xs(key=key, level=level, axis=1)[slice_col]
-            df = df[idx]
+
         
         elif jaarmax_as=='none':
             #doe niets
