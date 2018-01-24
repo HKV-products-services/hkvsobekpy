@@ -16,8 +16,8 @@ hkvsobekpy will install `tqdm` and `fire` as dependencies. The other required pa
 - numpy
 - scipy
 - pandas
-- Fiona
 - GDAL
+- Fiona
 - shapely
 - pyproj
 - geopandas
