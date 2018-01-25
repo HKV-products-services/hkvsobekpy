@@ -66,7 +66,7 @@ See the jupyter notebook 'waterstand statistiek.ipynb' in the notebook folder fo
 
 ![alt text](https://github.com/HKV-products-services/hkvsobekpy/blob/master/img/stats.png "waterlevel statistics")
 
-Contact
+# contact
 We at HKV provide expert advice and research in the field of water and safety. Using `hkvsobekpy` we optimize our research and provide options to derive threshold levels to be used in custom-build operational apps and dashboards for river, coasts and deltas providing early-warnings and forecasts for risk and disaster management.
 
 Interested? Head to https://www.hkv.nl/en/ or drop me a line at m.vanhoek [at] hkv.nl
