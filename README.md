@@ -64,7 +64,6 @@ To read a single timeseries use:
 
 See the jupyter notebook 'waterstand statistiek.ipynb' in the notebook folder for more usage examples. For example how to get the return periods T25, T50 and T100 using a Gumbel function fit,  while the T10 is computed using a weigted average of the four nearest events
 
-Inline-style: 
 ![alt text](https://github.com/HKV-products-services/hkvsobekpy/blob/master/img/stats.png "waterlevel statistics")
 
 Contact
