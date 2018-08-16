@@ -2,6 +2,7 @@ import argparse
 import pandas as pd
 import datetime
 import numpy as np
+import warnings
 # import logging
 # from importlib import reload
 # # initiatie logging
@@ -15,6 +16,43 @@ import numpy as np
 
 
 class __bui_class(object):
+    class __errors__(object):
+        """
+        error class met verschillende foutmeldingen
+        """
+        @staticmethod
+        def fileNotFound(file=None):
+            raise IOError('Bestand bestaat niet. Is je pad goed? {}'.format(file))        
+        @staticmethod
+        def variableNotSupported(variable=None):
+            raise AttributeError('Variabele {} wordt (nog) niet ondersteund. Zie definition information'.format(variable))
+        @staticmethod
+        def builengteError(availablevalues=None,expectedvalues=None):
+            raise ValueError('Het verwachte aantal tijdstappen {} komt niet overeen met het aanwezige aantal tijdstappen {} in de dataframe'.format(expectedvalues,availablevalues))
+#        @staticmethod
+#        def metadataNotSet():
+#            raise AttributeError('Metadata is niet bekend. Zet met sobek.LeesMetadata(his_file)')
+#        @staticmethod
+#        def metadataError():
+#            raise AttributeError('Metadata kon tijdens de functie LeesMetadata() niet bepaald worden')
+#        @staticmethod
+#        def administratieError():            
+#            raise AttributeError('Administratieblok van his-file kan niet worden uitgelezen')
+#        @staticmethod
+#        def locationNotFound():            
+#            raise AttributeError('location niet gevonden. Is het een bestaande location?')
+#        @staticmethod
+#        def variabeleNotFound():            
+#            raise AttributeError('Parameter niet gevonden. Is het een bestaande parameter?')
+#        @staticmethod
+#        def jaarmaxError():
+#            raise ValueError('Voor de MultiWaardenArray functie kan alleen `year` of `none` gebruikt worden als voor de jaarmax_as parameter')
+#        @staticmethod
+#        def gewogenGemiddeldeError():
+#            raise ValueError('Kan gewogen gemiddelde niet bepalen. Vereiste is minimaal 2 punten aan de linker en rechterzijde van de gekozen T')
+#        def gebeurtenissenError():
+#            raise ValueError('Meer gebeurtenissen dan N.')
+    
     def __init__(self):
         return
 
@@ -47,16 +85,16 @@ class __bui_class(object):
                     
                     if 'GEBRUIK DE DEFAULT DATASET' in line.upper():
                         self.buiFile.default_dataset = int(f[i+1])
-                    if 'AANTAL STATION' in line.upper():
+                    elif 'AANTAL STATION' in line.upper():
                         self.buiFile.aantal_stations = int(f[i+1])
-                    if 'NAMEN VAN STATION' in line.upper():
+                    elif 'NAMEN VAN STATION' in line.upper():
                         stations = f[i+1:i+1+self.buiFile.aantal_stations]
                         self.buiFile.stations = [station.rstrip().replace("'","") for station in stations]
-                    if 'AANTAL SECONDEN PER WAARNEMINGSSTAP' in line.upper():
+                    elif 'AANTAL SECONDEN' in line.upper():
                         geb_sec = f[i+1].split()
                         self.buiFile.aantal_gebeurtenissen = int(geb_sec[0])
                         self.buiFile.aantal_seconden = int(geb_sec[1])
-                    if 'HET FORMAT IS: YYYY' in line.upper():
+                    elif 'HET FORMAT IS: YYYY' in line.upper():
                         T0_raw = f[i+2]#.split()                
                         idx_block = i+1
             # get data block
@@ -130,10 +168,11 @@ class __bui_class(object):
         filename: str
             path + naam buifile "{str:8}.bui" lengte buinaam is 8 tekens
         
-        dataset: str [default = "bui"] options ["bui", "reeks"]
-            type dataset dit is voorgedefinieerd door sobek.
+        dataset: (optional) str [default = "bui"] options ["bui", "reeks"]
+            type dataset, dit is voorgedefinieerd door sobek.
+            NB. 'reeks' is nog niet ondersteund.
             
-        comment: str
+        comment: (optional) str
             extra opmerkingenregels die in de header van de buifile worden geplaatst
         
         
@@ -160,8 +199,13 @@ class __bui_class(object):
         2010 11 07 00 00 00 14 00 00 00
         ... space seperated values in [mm/timestep] ... 
         """
+        if dataset.upper() != "BUI":
+            self.__errors__.variableNotSupported(variabele=dataset)
+        
         with open(filename, 'w') as bui:
+            
             if not comment==None: 
+                #optionele commentaarregel van gebruiker
                 bui.write("* "+comment+"\n")
             
             bui.write("* Deze buifile is automatisch aangemaakt door de buifile generator van HKV Lijn in Water"+"\n")
@@ -182,21 +226,31 @@ class __bui_class(object):
             
             bui.write("* Aantal gebeurtenissen en het aantal seconden per waarnemingsstap"+"\n")
             timedelta = int(datetime.datetime.timestamp(df.index[1]) - datetime.datetime.timestamp(df.index[0]))
+            
+            
             if dataset.upper() == "BUI": 
                 bui.write("1 "+str(timedelta)+"\n")
         
-            bui.write("* Elke commentaarregel wordt begonnen met een * (asteriks)."+"\n")
-            bui.write("* Meteo data: neerslag stations; voor elk station: neerslag intensiteit in mm."+"\n")
-            bui.write("* Eerste record bevat start datum & tijd en lengte van de gebeurtenis in dd hh mm ss"+"\n")
-            bui.write("* Het format is: yyyy mm dd hh mm ss"+"\n")
-            bui.write("* Daarna voor elk station de neerslag in mm per tijdstap."+"\n")
-            
-            lengte_bui = self.seconds_toperiods((df.index[-1] - df.index[0]).total_seconds()) 
-            bui.write(df.index[0].strftime('%Y %m %d %H %M %S ')+"{:0^2} {:0^2} {:0^2} {:0^2}".format(lengte_bui[0],lengte_bui[1],lengte_bui[2],lengte_bui[3])+"\n")
-            
-            df.to_csv(bui, sep = " ", index = False, header=False)
-        
-            bui.close()
+                bui.write("* Elke commentaarregel wordt begonnen met een * (asteriks)."+"\n")
+                bui.write("* Meteo data: neerslag stations; voor elk station: neerslag intensiteit in mm."+"\n")
+                bui.write("* Eerste record bevat start datum & tijd en lengte van de gebeurtenis in dd hh mm ss"+"\n")
+                bui.write("* Het format is: yyyy mm dd hh mm ss"+"\n")
+                bui.write("* Daarna voor elk station de neerslag in mm per tijdstap."+"\n")
+                
+                lengte_bui = self.seconds_toperiods((df.index[-1] - df.index[0]).total_seconds()) 
+                bui.write(df.index[0].strftime('%Y %m %d %H %M %S ')+"{:0^2} {:0^2} {:0^2} {:0^2}".format(lengte_bui[0],lengte_bui[1],lengte_bui[2],lengte_bui[3])+"\n")
+
+                
+                df.to_csv(bui, sep = " ", index = False, header=False)
+                bui.close()
+
+                #controleer tijdas bui
+                timesteps =  (df.index[-1] - df.index[0]).total_seconds()/timedelta +1 # +1 om tijdstap t=0 te verreken.
+                if int(timesteps) != int(len(df.index)):
+                    # ! error ! aantal tijdstappen en builengte komen niet met elkaar overeen
+                    self.__errors__.builengteError(availablevalues=int(len(df.index)),expectedvalues=int(timesteps))
+                    
+          
         
         
         

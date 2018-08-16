@@ -131,7 +131,8 @@ class __his_class(object):
             Factor welke op de stapgrote toegepast moet worden
         """
 
-        items = list(filter(None, str(tijdstapInfo).replace('.','').replace(':','').split(' ')))
+        #items = list(filter(None, str(tijdstapInfo).replace('.','').replace(':','').split(' '))) #old
+        items = list(filter(None, str(tijdstapInfo).replace('. ',' ').replace('.','').replace(':','').split(' ')))
         #pdb.set_trace()
         try:
             beginDate = datetime(int(items[1]),int(items[2]),int(items[3]),int(items[4]),int(items[5]),int(items[6]))
