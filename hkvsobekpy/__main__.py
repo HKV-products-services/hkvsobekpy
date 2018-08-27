@@ -5,7 +5,7 @@ from hkvsobekpy.core.waterlevelstat import __waterlevelstat_class
 from hkvsobekpy.core.plausibility import __plausibility_class
 
 __doc__ = """package for water-statistics and plausibility checker using his- and bui-file"""
-__version__ = '1.2.5'
+__version__ = '1.2.6'
 
 # initiate class for .bui-files
 __bui = __bui_class()
@@ -22,4 +22,4 @@ waterlevelstat = __waterlevelstat_class()
 plausibility = __plausibility_class()
 
 if __name__ == '__main__':
-  fire.Fire()
+    fire.Fire()

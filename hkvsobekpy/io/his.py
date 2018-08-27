@@ -66,6 +66,9 @@ class __his_class(object):
         def locationNotFound():            
             raise AttributeError('location niet gevonden. Is het een bestaande location?')
         @staticmethod
+        def unexpectedT0Error():            
+            raise AttributeError('T0 kon niet uitgelezen worden. Contact HKV')            
+        @staticmethod
         def variabeleNotFound():            
             raise AttributeError('Parameter niet gevonden. Is het een bestaande parameter?')
         @staticmethod
@@ -131,18 +134,20 @@ class __his_class(object):
             Factor welke op de stapgrote toegepast moet worden
         """
 
-        #items = list(filter(None, str(tijdstapInfo).replace('.','').replace(':','').split(' '))) #old
-        items = list(filter(None, str(tijdstapInfo).replace('. ','.0').replace('.','').replace(':','').split(' ')))
-        #set_trace()
-        try:
-            beginDate = datetime(int(items[1]),int(items[2]),int(items[3]),int(items[4]),int(items[5]),int(items[6]))
-        except:
-            #set_trace()
-            beginDate = datetime.strptime(items[1],'%Y%m%d')
+        if len(tijdstapInfo) == 40:
+            year = tijdstapInfo[4:8]
+            month = tijdstapInfo[9:11]
+            day = tijdstapInfo[12:14]
+            hours = tijdstapInfo[15:17]
+            minutes = tijdstapInfo[18:20]
+            seconds = tijdstapInfo[21:23]
 
-        scu = items[-1].replace(')','').replace("'",'')
-        timeStepInterval =  scu[(len(scu) - 1)]
-        timeStepFactor = int(scu[0:len(scu)-1])
+            beginDate = datetime(int(year), int(month), int(day), int(hours), int(minutes), int(seconds))
+
+            timeStepInterval = tijdstapInfo[-2:-1]
+            timeStepFactor = int(tijdstapInfo[30:-2])
+        else:
+            self.__errors__.unexpectedT0Error()
 
         return beginDate, timeStepInterval, timeStepFactor    
 
