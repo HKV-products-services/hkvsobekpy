@@ -1,12 +1,11 @@
-
 [build-system]
 requires = ["flit"]
 build-backend = "flit.buildapi"
 
 [tool.flit.metadata]
 module = "hkvsobekpy"
-author = "Mattijn van Hoek"
+author = "HKV"
 author-email = "hoek@hkv.nl"
-home-page = "https://github.com/HKV-products-services/hkvsobekpy"
+home-page = "https://www.hkv.nl"
 classifiers = ["License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)"]
 
