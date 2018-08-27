@@ -132,11 +132,12 @@ class __his_class(object):
         """
 
         #items = list(filter(None, str(tijdstapInfo).replace('.','').replace(':','').split(' '))) #old
-        items = list(filter(None, str(tijdstapInfo).replace('. ',' ').replace('.','').replace(':','').split(' ')))
-        #pdb.set_trace()
+        items = list(filter(None, str(tijdstapInfo).replace('. ','.0').replace('.','').replace(':','').split(' ')))
+        #set_trace()
         try:
             beginDate = datetime(int(items[1]),int(items[2]),int(items[3]),int(items[4]),int(items[5]),int(items[6]))
         except:
+            #set_trace()
             beginDate = datetime.strptime(items[1],'%Y%m%d')
 
         scu = items[-1].replace(')','').replace("'",'')
