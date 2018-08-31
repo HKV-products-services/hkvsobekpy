@@ -289,12 +289,14 @@ class __his_class(object):
         df_his_locs = pd.DataFrame(self.hisFile.locationInfo.locations, columns=['his name'])
         
         df_hia_locs = pd.DataFrame(self.hiaFile.locationInfo.locations)
-        df_hia_locs.set_index('index', inplace=True)
+        # only merge if df_hia_locs contains items
+        if not df_hia_locs.empty:
+            df_hia_locs.set_index('index', inplace=True)
         
-        df_locs = pd.merge(df_his_locs, df_hia_locs, left_index=True, right_index=True, how='outer')
-        df_locs.loc[df_locs.isnull().any(axis=1), 'long name'] = df_locs[df_locs.isnull().any(axis=1)]['his name']
-        
-        self.hisFile.locationInfo.locations = df_locs['long name'].tolist()
+            df_locs = pd.merge(df_his_locs, df_hia_locs, left_index=True, right_index=True, how='outer')
+            df_locs.loc[df_locs.isnull().any(axis=1), 'long name'] = df_locs[df_locs.isnull().any(axis=1)]['his name']
+            
+            self.hisFile.locationInfo.locations = df_locs['long name'].tolist()
         
     def _mergeHiaHisParameters(self):
         """
@@ -303,12 +305,14 @@ class __his_class(object):
         df_his_pars = pd.DataFrame(self.hisFile.variabeleInfo.variabelen, columns=['his name'])
         
         df_hia_pars = pd.DataFrame(self.hiaFile.variabeleInfo.variabelen)
-        df_hia_pars.set_index('index', inplace=True)
-                
-        df_pars = pd.merge(df_his_pars, df_hia_pars, left_index=True, right_index=True, how='outer')
-        df_pars.loc[df_pars.isnull().any(axis=1), 'long name'] = df_pars[df_pars.isnull().any(axis=1)]['his name']
-        
-        self.hisFile.variabeleInfo.variabelen = df_pars['long name'].tolist()
+        # only merge if df_hia_pars contains items
+        if not df_hia_pars.empty:        
+            df_hia_pars.set_index('index', inplace=True)
+                    
+            df_pars = pd.merge(df_his_pars, df_hia_pars, left_index=True, right_index=True, how='outer')
+            df_pars.loc[df_pars.isnull().any(axis=1), 'long name'] = df_pars[df_pars.isnull().any(axis=1)]['his name']
+            
+            self.hisFile.variabeleInfo.variabelen = df_pars['long name'].tolist()
         
     def KrijgLokaties(self):#, his_file):
         """
@@ -372,6 +376,11 @@ class __his_class(object):
         ----------
         his_file : str
             Volledige pad van het bestand
+        hia_file : anyOf(path_to_file, 'auto', 'none')
+            Kies uit 'auto', 'none' of het volledig pad naar het bestand.
+            Default is 'auto', het zal dan proberen om his_file.with_suffix('.hia') te gebruiken
+            Wanneer 'none' gezet wordt zal er geen link met een .hia bestand gelegd worden.
+            Anders is het het volledige pad van het bestand
 
         Returns
         -------
@@ -380,18 +389,19 @@ class __his_class(object):
         """
         self.hisFile.metaDataIngelezen = False
         myHisFile = Path(his_file)
-        
-        # Try to parse a hia file
-        if hia_file == 'auto':
-            myHiaFile = Path(his_file).with_suffix('.hia')
-        else:
-            myHiaFile = Path(hia_file)
-            try:
-                myHiaFile.resolve()
-            except:
-                # doesn't exist
-                self.__errors__.fileNotFound()
-        self._leesHia(myHiaFile)
+
+        if not hia_file=='none':
+            # Try to parse a hia file
+            if hia_file == 'auto':
+                myHiaFile = Path(his_file).with_suffix('.hia')
+            else:
+                myHiaFile = Path(hia_file)
+                try:
+                    myHiaFile.resolve()
+                except:
+                    # doesn't exist
+                    self.__errors__.fileNotFound()
+            self._leesHia(myHiaFile)
             
         try:
             p = myHisFile.resolve()
@@ -408,9 +418,9 @@ class __his_class(object):
             with open(self.hisFile.hisFileName, "rb") as f:
                 try:
                     self._leesAdmin(f)
-                    
-                    self._mergeHiaHisLocations()
-                    self._mergeHiaHisParameters()
+                    if not hia_file=='none':
+                        self._mergeHiaHisLocations()
+                        self._mergeHiaHisParameters()
                 except:
                     self.__errors__.administratieError()
             
