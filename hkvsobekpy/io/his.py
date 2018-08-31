@@ -16,6 +16,7 @@ import pandas as pd
 from scipy import optimize
 import fire
 import warnings
+import configparser
 from hkvsobekpy.core.utils import *
 try:
     shell = get_ipython().__class__.__name__
@@ -66,6 +67,12 @@ class __his_class(object):
         def locationNotFound():            
             raise AttributeError('location niet gevonden. Is het een bestaande location?')
         @staticmethod
+        def longLocationNotFound():
+            raise AttributeError('Long location niet gevonden in hia.')
+        @staticmethod
+        def longParameterNotFound():
+            raise AttributeError('Long Parameter niet gevonden in hia.')
+        @staticmethod
         def unexpectedT0Error():            
             raise AttributeError('T0 kon niet uitgelezen worden. Contact HKV')            
         @staticmethod
@@ -94,6 +101,9 @@ class __his_class(object):
         self.hisFile.tijdstapInfo = argparse.Namespace()
         self.hisFile.variabeleInfo = argparse.Namespace()
         self.hisFile.locationInfo = argparse.Namespace()       
+        self.hiaFile = argparse.Namespace()
+        self.hiaFile.variabeleInfo = argparse.Namespace()
+        self.hiaFile.locationInfo = argparse.Namespace()       
                 
     def _leesHeader(self, f):
         """
@@ -151,6 +161,36 @@ class __his_class(object):
 
         return beginDate, timeStepInterval, timeStepFactor    
 
+    def _leesHia(self, f):
+        """
+        Lees hia bestand
+        """
+                
+        try:
+            p = f.resolve()
+            self.hiaFile.hiaFileName = str(p)            
+
+            config = configparser.ConfigParser()
+            config.read(self.hiaFile.hiaFileName)
+            try:
+                # parse hia locations to list of dict
+                locations = [{'index':int(val)-1, 'long name':config['Long Locations'][val]} for val in config['Long Locations']]  
+                self.hiaFile.locationInfo.locations = locations
+            except KeyError as e:
+                self.__errors__.longLocationNotFound()
+            
+            try:
+                # parse hia parameters to list of dict
+                parameters = [{'index':int(val)-1, 'long name':config['Long Parameters'][val]} for val in config['Long Parameters']]
+                self.hiaFile.variabeleInfo.variabelen = parameters
+            except KeyError as e:
+                self.__errors__.longParametersNotFound()
+
+        except:
+            # hia doesn't exist return empty objects
+            self.hiaFile.locationInfo.locations = []
+            self.hiaFile.variabeleInfo.variabelen = []
+    
     def _leesAdmin(self, f):
         """
         Lees het administratie blok
@@ -242,6 +282,34 @@ class __his_class(object):
 
         return locOffset   
     
+    def _mergeHiaHisLocations(self):
+        """
+        Merge locations his en hia
+        """
+        df_his_locs = pd.DataFrame(self.hisFile.locationInfo.locations, columns=['his name'])
+        
+        df_hia_locs = pd.DataFrame(self.hiaFile.locationInfo.locations)
+        df_hia_locs.set_index('index', inplace=True)
+        
+        df_locs = pd.merge(df_his_locs, df_hia_locs, left_index=True, right_index=True, how='outer')
+        df_locs.loc[df_locs.isnull().any(axis=1), 'long name'] = df_locs[df_locs.isnull().any(axis=1)]['his name']
+        
+        self.hisFile.locationInfo.locations = df_locs['long name'].tolist()
+        
+    def _mergeHiaHisParameters(self):
+        """
+        Merge parameters his en hia
+        """
+        df_his_pars = pd.DataFrame(self.hisFile.variabeleInfo.variabelen, columns=['his name'])
+        
+        df_hia_pars = pd.DataFrame(self.hiaFile.variabeleInfo.variabelen)
+        df_hia_pars.set_index('index', inplace=True)
+                
+        df_pars = pd.merge(df_his_pars, df_hia_pars, left_index=True, right_index=True, how='outer')
+        df_pars.loc[df_pars.isnull().any(axis=1), 'long name'] = df_pars[df_pars.isnull().any(axis=1)]['his name']
+        
+        self.hisFile.variabeleInfo.variabelen = df_pars['long name'].tolist()
+        
     def KrijgLokaties(self):#, his_file):
         """
         Krijg de locations beschikbaar in de his-file. 
@@ -296,7 +364,7 @@ class __his_class(object):
         tijdstappen = self.hisFile.tijdstapInfo.moments
         return tijdstappen    
 
-    def LeesMetadata(self,his_file):
+    def LeesMetadata(self,his_file, hia_file='auto'):
         """
         Open het bestand
 
@@ -312,6 +380,19 @@ class __his_class(object):
         """
         self.hisFile.metaDataIngelezen = False
         myHisFile = Path(his_file)
+        
+        # Try to parse a hia file
+        if hia_file == 'auto':
+            myHiaFile = Path(his_file).with_suffix('.hia')
+        else:
+            myHiaFile = Path(hia_file)
+            try:
+                myHiaFile.resolve()
+            except:
+                # doesn't exist
+                self.__errors__.fileNotFound()
+        self._leesHia(myHiaFile)
+            
         try:
             p = myHisFile.resolve()
         except:
@@ -326,14 +407,17 @@ class __his_class(object):
             #f = open(str(p), "rb")
             with open(self.hisFile.hisFileName, "rb") as f:
                 try:
-                    self._leesAdmin(f)        
+                    self._leesAdmin(f)
+                    
+                    self._mergeHiaHisLocations()
+                    self._mergeHiaHisParameters()
                 except:
                     self.__errors__.administratieError()
             
         self.hisFile.metaDataIngelezen = True
         return self
     
-    def SelectPeriodeWaardenArray(self, df, startMMdd=(1,1), endMMdd=(12,31), jaarmax_as='date'):
+    def SelectPeriodeWaardenArray(self, df, startMMdd=(1,1), endMMdd=(12,31), jaarmax_as='none'):
         """
         Selecteer op basis van een DataFrame de gebeurtenissen binnen een bepaalde periode (bijv. een groeiseizoen).
         Waarbij er de mogelijkheid is om de gebeurtenissen binnen deze periode te groeperen.
@@ -424,7 +508,7 @@ class __his_class(object):
     
         return df
 
-    def EnkeleWaardenArray(self, location, parameter, startMMdd=(1,1), endMMdd=(12,31), jaarmax_as='date'):
+    def EnkeleWaardenArray(self, location, parameter, startMMdd=(1,1), endMMdd=(12,31), jaarmax_as='none'):
         """
         Lees de waarden van een enkele variabele op een enkele location
 
@@ -488,8 +572,8 @@ class __his_class(object):
         if self.hisFile.metaDataIngelezen == False:
             self.__errors__.metadataError()
         
-        loc = location[0:20]
-        var = parameter[0:20]
+        loc = location
+        var = parameter
         
         with open(self.hisFile.hisFileName, "rb") as f: 
             varLocOffset = self._locOffset(loc, var)
@@ -509,7 +593,7 @@ class __his_class(object):
         return df#.T.squeeze()
     
     def MultiWaardenArray(self, locations, parameters, startMMdd=(1,1), endMMdd=(12,31), 
-                          jaarmax_as='year', drop_lege_jaren=True):
+                          jaarmax_as='none', drop_lege_jaren=True):
         """
         Lees de waarden van meerdere variabelen op meerdere locations
 
