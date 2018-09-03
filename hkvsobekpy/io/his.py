@@ -206,18 +206,26 @@ class __his_class(object):
         # lees aantal locations
         self.hisFile.locationInfo.numLoc = np.fromfile(f,np.int,1)[0]    
 
+        # lambda function to split string
+        split_string = lambda x, n: [x[i:i+n] for i in range(0, len(x), n)]
+        
         # lees variabelen
         self.hisFile.variabeleInfo.variabelen = []
-        for i in range(self.hisFile.variabeleInfo.numVar):
-            self.hisFile.variabeleInfo.variabelen.append(f.read(20).decode('windows-1252'))    
+        var_string = f.read(self.hisFile.variabeleInfo.numVar * 20).decode('windows-1252')
+        self.hisFile.variabeleInfo.variabelen = split_string(var_string, 20)
+
+#         for i in range(self.hisFile.variabeleInfo.numVar):
+#             self.hisFile.variabeleInfo.variabelen.append(f.read(20).decode('windows-1252'))    
 
         # Lees locations
         self.hisFile.locationInfo.id = []
         self.hisFile.locationInfo.locations = []
+        
+        #self.hisFile.locationInfo.locations = np.fromfile(f, np.dtype("i2, V20" ), 2)#, U20"), 1)
         for i in range(self.hisFile.locationInfo.numLoc):            
             self.hisFile.locationInfo.id.append(np.fromfile(f,np.int,1)[0])
             self.hisFile.locationInfo.locations.append(f.read(20).decode('windows-1252').rstrip())
-            #self.hisFile.locationInfo.locations.append(locationInfo)
+            
 
         # lees tijdstappen
         self.hisFile.headerSize = f.tell()
@@ -314,7 +322,19 @@ class __his_class(object):
             
             self.hisFile.variabeleInfo.variabelen = df_pars['long name'].tolist()
         
-    def KrijgLokaties(self):#, his_file):
+    def GetLocations(self):
+        """
+        Get the available locations from the his-file. 
+            
+        Returns
+        -------
+        locations : list
+            The locations available within the his-file
+        """        
+        locations = self.hisFile.locationInfo.locations
+        return locations          
+        
+    def KrijgLokaties(self):
         """
         Krijg de locations beschikbaar in de his-file. 
         
@@ -328,9 +348,21 @@ class __his_class(object):
         locations : list
             De locations welke bekend zijn binnen het his-bestand
         """
-        #self.LeesMetadata(his_file)
+        warnings.warn("this function will deprecate in the future, use function hkvsobekpy.GetLocations")
         locations = self.hisFile.locationInfo.locations
         return locations
+    
+    def GetParameters(self):
+        """
+        Get the available parameters from the his-file. 
+            
+        Returns
+        -------
+        parameters : list
+            The parameters available within the his-file
+        """        
+        parameters = self.hisFile.variabeleInfo.variabelen
+        return parameters    
     
     def KrijgParameters(self):#, his_file):
         """
@@ -346,9 +378,21 @@ class __his_class(object):
         parameters : list
             De parameters welke bekend zijn binnen het his-bestand
         """
-        #self.LeesMetadata(his_file)
+        warnings.warn("this function will deprecate in the future, use function hkvsobekpy.GetParameters")
         parameters = self.hisFile.variabeleInfo.variabelen
         return parameters
+
+    def GetTimestamps(self):
+        """
+        Get the available timestamps from the his-file. 
+            
+        Returns
+        -------
+        timestamps : list of datetime objects
+            The timestamps available within the his-file
+        """
+        timestamps = self.hisFile.tijdstapInfo.moments
+        return timestamps
 
     def KrijgTijdstappen(self):#, his_file):
         """
@@ -364,9 +408,72 @@ class __his_class(object):
         tijdstappen : list
             De tijdstappen welke bekend zijn binnen het his-bestand
         """
+        warnings.warn("this function will deprecate in the future, use function hkvsobekpy.GetTimestamps")
         #self.LeesMetadata(his_file)
         tijdstappen = self.hisFile.tijdstapInfo.moments
         return tijdstappen    
+    
+    def ReadMetadata(self, his_file, hia_file='auto'):
+        """
+        Initiate file by reading headers. This function can be followed by the function DataFrame()
+
+        Parameters
+        ----------
+        his_file : str
+            Full path to the file
+        hia_file : anyOf(path_to_file, 'auto', 'none')
+            Choose from 'auto', 'none' or full path of file.
+            Default is 'auto', it will try to use his_file.with_suffix('.hia')
+            When 'none' is set, it won't use any .hia-file
+            Other values will be treated as full path to the .hia-file
+        """
+        self.hisFile.metaDataIngelezen = False
+        myHisFile = Path(his_file)
+            
+        try:
+            p = myHisFile.resolve()
+        except:
+            # doesn't exist
+            self.__errors__.fileNotFound()
+
+        # exists    
+        self.hisFile.hisFileName = str(p)            
+
+        # set length filesize (bytes)
+        statInfo = os.stat(his_file)
+        self.hisFile.hisFileSize = statInfo.st_size
+
+        # read his file meta data
+        with open(self.hisFile.hisFileName, "rb") as f:
+            try:
+                self._leesAdmin(f)
+
+            except:
+                self.__errors__.administratieError()
+
+        # continue with hia file, if not 'none'
+        if not hia_file=='none':
+            # try to parse a hia file
+            # on auto-path
+            if hia_file == 'auto':
+                myHiaFile = Path(his_file).with_suffix('.hia')
+            # on full-path
+            else:
+                myHiaFile = Path(hia_file)
+                try:
+                    myHiaFile.resolve()
+                except:
+                    # doesn't exist
+                    self.__errors__.fileNotFound()
+            # file exist, read files 
+            # merge with locations and parameters where possible
+            self._leesHia(myHiaFile)
+            self._mergeHiaHisLocations()
+            self._mergeHiaHisParameters()                
+            
+        self.hisFile.metaDataIngelezen = True
+        return self
+        
 
     def LeesMetadata(self,his_file, hia_file='auto'):
         """
@@ -387,13 +494,40 @@ class __his_class(object):
         Str : 'Metadata Ingelezen'
         
         """
+        warnings.warn("this function will deprecate in the future, use function hkvsobekpy.ReadMetadata instead")
         self.hisFile.metaDataIngelezen = False
         myHisFile = Path(his_file)
 
+
+            
+        try:
+            p = myHisFile.resolve()
+        except:
+            # doesn't exist
+            self.__errors__.fileNotFound()
+
+        # exists    
+        self.hisFile.hisFileName = str(p)            
+
+        # set length filesize (bytes)
+        statInfo = os.stat(his_file)
+        self.hisFile.hisFileSize = statInfo.st_size
+
+        # read his file meta data
+        with open(self.hisFile.hisFileName, "rb") as f:
+            try:
+                self._leesAdmin(f)
+
+            except:
+                self.__errors__.administratieError()
+
+        # continue with hia file, if not 'none'
         if not hia_file=='none':
-            # Try to parse a hia file
+            # try to parse a hia file
+            # on auto-path
             if hia_file == 'auto':
                 myHiaFile = Path(his_file).with_suffix('.hia')
+            # on full-path
             else:
                 myHiaFile = Path(hia_file)
                 try:
@@ -401,28 +535,11 @@ class __his_class(object):
                 except:
                     # doesn't exist
                     self.__errors__.fileNotFound()
+            # file exist, read files 
+            # merge with locations and parameters where possible
             self._leesHia(myHiaFile)
-            
-        try:
-            p = myHisFile.resolve()
-        except:
-            # doesn't exist
-            self.__errors__.fileNotFound()
-        else:
-            # exists    
-            self.hisFile.hisFileName = str(p)            
-            # set length filesize (bytes)
-            statInfo = os.stat(his_file)
-            self.hisFile.hisFileSize = statInfo.st_size
-            #f = open(str(p), "rb")
-            with open(self.hisFile.hisFileName, "rb") as f:
-                try:
-                    self._leesAdmin(f)
-                    if not hia_file=='none':
-                        self._mergeHiaHisLocations()
-                        self._mergeHiaHisParameters()
-                except:
-                    self.__errors__.administratieError()
+            self._mergeHiaHisLocations()
+            self._mergeHiaHisParameters()                
             
         self.hisFile.metaDataIngelezen = True
         return self
@@ -717,4 +834,44 @@ class __his_class(object):
         if return_matching_parameter == True:
             return df, parameter
         else:
-            return df        
+            return df
+        
+    def DataFrame(self):
+        """
+        Extract all timeseries from his-file as pandas.DataFrame. This is quick.
+        
+        Returns
+        -------
+        df : pandas.DataFrame
+            containing all available timesteps for all locations and parameters in his-file
+        """
+        # get metadata from appropriate his-file
+        no_moments = len(self.hisFile.tijdstapInfo.moments)
+        no_params = self.hisFile.variabeleInfo.numVar
+        no_locs = self.hisFile.locationInfo.numLoc
+
+        # the byte range goes like:
+        # for t in times: for l in locs: for p in params: print (t, l, p)
+        with open(self.hisFile.hisFileName, "rb") as f: 
+            start = self.hisFile.tijdstapInfo.offset[0]
+            no_values = (no_moments * no_params * no_locs) + no_moments
+            seek = f.seek(start-4)    
+            values = np.fromfile(f, np.float32, no_values) # np.float32 == np.dtype('f4')
+
+        # reshape on number of timestamps
+        values = values.reshape(no_moments, -1)
+        # filter by slice as first column contains 4 non-assigned bytes
+        values = np.ravel(values[:,1::])
+        # reshape to prepare for dataframe
+        values = values.reshape((no_params, no_locs, no_moments), order='F')
+        values = values.T.reshape(no_moments, -1)              
+        
+        # create multi-index for the columns
+        lable_one = self.hisFile.variabeleInfo.variabelen
+        lable_two = self.hisFile.locationInfo.locations
+        cols = pd.MultiIndex.from_product([lable_one, lable_two])
+
+        # parse into dataframe
+        df = pd.DataFrame(values, index=self.hisFile.tijdstapInfo.moments, columns=cols)    
+        
+        return df
