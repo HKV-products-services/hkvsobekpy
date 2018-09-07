@@ -867,11 +867,12 @@ class __his_class(object):
         values = values.T.reshape(no_moments, -1)              
         
         # create multi-index for the columns
-        lable_one = self.hisFile.variabeleInfo.variabelen
-        lable_two = self.hisFile.locationInfo.locations
-        cols = pd.MultiIndex.from_product([lable_one, lable_two])
+        lable_locs = self.hisFile.locationInfo.locations
+        lable_vars = self.hisFile.variabeleInfo.variabelen
+        cols = pd.MultiIndex.from_product([lable_locs, lable_vars])
 
         # parse into dataframe
         df = pd.DataFrame(values, index=self.hisFile.tijdstapInfo.moments, columns=cols)    
-        
+        df = df.swaplevel(i=0, j=1, axis=1)
+        df.sort_index(axis=1,inplace=True)
         return df
