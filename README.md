@@ -52,7 +52,9 @@ Such as the functions to get the locations, timesteps and parameters:
     last 2 timesteps:      [datetime.datetime(2014, 10, 18, 15, 20), datetime.datetime(2014, 12, 12, 10, 20)]
     all parameters:        ['Waterlevel max. (m A', 'Waterdepth max. (m) ']
     
-To read the whole his-file into a pandas Dataframe use `df = calcpnt.DataFrame()`
+To read the whole his-file into a pandas Dataframe use 
+
+    df = calcpnt.DataFrame()`
 
 To read a single timeseries use:
 
