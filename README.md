@@ -54,7 +54,7 @@ Such as the functions to get the locations, timesteps and parameters:
     
 To read the whole his-file into a pandas Dataframe use 
 
-    df = calcpnt.DataFrame()`
+    df = calcpnt.DataFrame()
 
 To read a single timeseries use:
 
@@ -66,6 +66,8 @@ To read a single timeseries use:
     df.plot(legend=True)
 
 ![alt text](https://github.com/HKV-products-services/hkvsobekpy/blob/master/img/waterlevel.png "single timeseries using location and parameter")
+
+For a notebook with the example as kentioned above, click here http://nbviewer.jupyter.org/github/HKV-products-services/hkvsobekpy/blob/master/notebook/revisit%20lezen%20HIS%20file.ipynb
 
 See the jupyter notebook 'waterstand statistiek.ipynb' in the notebook folder for more usage examples. For example how to get the return periods T25, T50 and T100 using a Gumbel function fit,  while the T10 is computed using a weigted average of the four nearest events
 
