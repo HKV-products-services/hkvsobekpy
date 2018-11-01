@@ -33,13 +33,13 @@ Import the package and define path to his-file
     
 Metadata of the his-file is read first and using this metadata block subequent functions can be applied.
 
-    calcpnt = hkv.read_his.LeesMetadata(his_file)
+    calcpnt = hkv.read_his.ReadMetadata(his_file)
     
 Such as the functions to get the locations, timesteps and parameters:
     
-    locaties = calcpnt.KrijgLokaties()
-    tijdstappen = calcpnt.KrijgTijdstappen()
-    parameters = calcpnt.KrijgParameters()
+    locaties = calcpnt.GetLocations()
+    tijdstappen = calcpnt.GetTimestamps()
+    parameters = calcpnt.GetParameters()
 
     print("""\
     first 5 locations:     {0}
@@ -54,7 +54,7 @@ Such as the functions to get the locations, timesteps and parameters:
     
 To read a single timeseries use:
 
-    df = calcpnt .EnkeleWaardenArray(locaties[0],
+    df = calcpnt.EnkeleWaardenArray(locaties[0],
         parameters[0],
         startMMdd=(1, 1),
         endMMdd=(12, 31),
