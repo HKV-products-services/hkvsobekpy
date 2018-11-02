@@ -7,11 +7,15 @@ A bui-file is a text file object used for storing precipitation events for multi
 Next to reading the his and bui-files, this package also contains some modules for applying statistics to obtain the return period for T10, T25, T50 and T100. This information is useful to compare against actual waterlevels.
 
 # installation
-install using pypip:
+install using pypip (make sure you pass the list of dependencies first!):
 
 `pip install hkvsobekpy`
 
 # dependencies
+Using Miniconda or Anaconda:
+First do `conda install geopandas`. 
+
+Using wheels
 hkvsobekpy will install `tqdm` and `fire` as dependencies. The other required packgages are not included since Windows cannot compile these packages from source. These are:
 - numpy
 - scipy
