@@ -12,10 +12,10 @@ install using pypip (make sure you pass the list of dependencies first!):
 `pip install hkvsobekpy`
 
 # dependencies
-Using Miniconda or Anaconda:
+### Using Miniconda or Anaconda:
 First do `conda install geopandas`. 
 
-Using wheels
+### Using wheels
 hkvsobekpy will install `tqdm` and `fire` as dependencies. The other required packgages are not included since Windows cannot compile these packages from source. These are:
 - numpy
 - scipy
