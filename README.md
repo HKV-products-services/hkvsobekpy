@@ -27,9 +27,9 @@ hkvsobekpy will install `tqdm` and `fire` as dependencies. The other required pa
 - pyproj
 - Fiona
 - geopandas
-- fire
-- tqdm
 - matplotlib
+- (fire)
+- (tqdm)
 
 Use `pip install <package>` to install or go to https://www.lfd.uci.edu/~gohlke/pythonlibs to download these packages on Windows (and use `pip install path/to/package.whl` to install the package).
 
