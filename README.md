@@ -7,11 +7,17 @@ A bui-file is a text file object used for storing precipitation events for multi
 Next to reading the his and bui-files, this package also contains some modules for applying statistics to obtain the return period for T10, T25, T50 and T100. This information is useful to compare against actual waterlevels.
 
 # installation
-install using pypip:
+install using pypip (make sure you pass the list of dependencies first!):
 
 `pip install hkvsobekpy`
 
 # dependencies
+### Using Miniconda or Anaconda:
+First do: 
+`conda install geopandas`
+`..`
+
+### Using wheels
 hkvsobekpy will install `tqdm` and `fire` as dependencies. The other required packgages are not included since Windows cannot compile these packages from source. These are:
 - numpy
 - scipy
@@ -21,8 +27,11 @@ hkvsobekpy will install `tqdm` and `fire` as dependencies. The other required pa
 - pyproj
 - Fiona
 - geopandas
+- matplotlib
+- (fire)
+- (tqdm)
 
-Go to https://www.lfd.uci.edu/~gohlke/pythonlibs to download these packages on Windows (and use `pip install path/to/package.whl` to install the package).
+Use `pip install <package>` to install or go to https://www.lfd.uci.edu/~gohlke/pythonlibs to download these packages on Windows (and use `pip install path/to/package.whl` to install the package).
 
 # usage package
 Import the package and define path to his-file
@@ -32,7 +41,7 @@ Import the package and define path to his-file
     
 Metadata of the his-file is read first and using this metadata block subequent functions can be applied.
 
-    calcpnt = hkv.read_his.LeesMetadata(his_file)
+    calcpnt = hkv.read_his.ReadMetadata(his_file)
     
 Such as the functions to get the locations, timesteps and parameters:
     
@@ -51,12 +60,24 @@ Such as the functions to get the locations, timesteps and parameters:
     last 2 timesteps:      [datetime.datetime(2014, 10, 18, 15, 20), datetime.datetime(2014, 12, 12, 10, 20)]
     all parameters:        ['Waterlevel max. (m A', 'Waterdepth max. (m) ']
     
-To read the whole his into a Pandas DataFramesingle:
 
-    df = calcpnt.Dataframe()
-    df.head()
+To read the whole his-file into a pandas Dataframe use 
+
+    df = calcpnt.DataFrame()
+
+For a notebook with a similar example as mentioned above, click here http://nbviewer.jupyter.org/github/HKV-products-services/hkvsobekpy/blob/master/notebook/revisit%20lezen%20HIS%20file.ipynb
+
+To read a single timeseries use:
+
+    df = calcpnt.EnkeleWaardenArray(locaties[0],
+        parameters[0],
+        startMMdd=(1, 1),
+        endMMdd=(12, 31),
+        jaarmax_as='date'))
+    df.plot(legend=True)
 
 ![alt text](https://github.com/HKV-products-services/hkvsobekpy/blob/master/img/table_view.png "dataframe head of his file")
+
 
 See the jupyter notebook 'waterstand statistiek.ipynb' in the notebook folder for more usage examples. For example how to get the return periods T25, T50 and T100 using a Gumbel function fit,  while the T10 is computed using a weigted average of the four nearest events
 
