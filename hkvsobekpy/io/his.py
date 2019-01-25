@@ -52,34 +52,34 @@ class __his_class(object):
         error class met verschillende foutmeldingen
         """
         @staticmethod
-        def fileNotFound():
-            raise IOError('HIS-bestand bestaat niet. Is je pad goed?')        
+        def fileNotFound(path_file):
+            raise IOError("File doesn't exist. Your path '{}' is OK?".format(path_file))
         @staticmethod
         def metadataNotSet():
-            raise AttributeError('Metadata is niet bekend. Zet met sobek.LeesMetadata(his_file)')
+            raise AttributeError('Metadata is not set. Use hkvsobekpy.ReadMetadata(his_file)')
         @staticmethod
         def metadataError():
-            raise AttributeError('Metadata kon tijdens de functie LeesMetadata() niet bepaald worden')
+            raise AttributeError('Metadata could not be set using function ReadMetadata()')
         @staticmethod
         def administratieError():            
             raise AttributeError('Administratieblok van his-file kan niet worden uitgelezen')
         @staticmethod
-        def locationNotFound():            
-            raise AttributeError('location niet gevonden. Is het een bestaande location?')
+        def locationNotFound(loc):            
+            raise AttributeError("Could not find location '{}'. Is it an existing location?".format(loc))
         @staticmethod
-        def longLocationNotFound():
-            raise AttributeError('Long location niet gevonden in hia.')
+        def longLocationNotFound(error):
+            raise AttributeError('There is an error reading the locations in the hia-file. Full error is:\n{}'.format(error))
         @staticmethod
-        def longParameterNotFound():
-            raise AttributeError('Long Parameter niet gevonden in hia.')
+        def longParameterNotFound(error):
+            raise AttributeError('There is an error reading the parameters in the hia-file. Full error is:\n{}'.format(error))
         @staticmethod
-        def unexpectedT0Error():            
-            raise AttributeError('T0 kon niet uitgelezen worden. Contact HKV')            
+        def unexpectedT0Error(timestampInfo):            
+            raise AttributeError("T0 could not be read. Timestamp info is '{}'.".format(timestampInfo))            
         @staticmethod
-        def variabeleNotFound():            
-            raise AttributeError('Parameter niet gevonden. Is het een bestaande parameter?')
+        def parameterNotFound(param):            
+            raise AttributeError("Could not find parameter '{}'. Is it an existing parameter?".format(param))
         @staticmethod
-        def jaarmaxError():
+        def annualmaxError():
             raise ValueError('Voor de MultiWaardenArray functie kan alleen `year` of `none` gebruikt worden als voor de jaarmax_as parameter')
         @staticmethod
         def gewogenGemiddeldeError():
@@ -98,11 +98,11 @@ class __his_class(object):
         # python2.7: obj = argparse.Namespace()
         # python3.x: obj = types.SimpleNamespace()
         self.hisFile = argparse.Namespace()
-        self.hisFile.tijdstapInfo = argparse.Namespace()
-        self.hisFile.variabeleInfo = argparse.Namespace()
+        self.hisFile.timestampInfo = argparse.Namespace()
+        self.hisFile.parameterInfo = argparse.Namespace()
         self.hisFile.locationInfo = argparse.Namespace()       
         self.hiaFile = argparse.Namespace()
-        self.hiaFile.variabeleInfo = argparse.Namespace()
+        self.hiaFile.parameterInfo = argparse.Namespace()
         self.hiaFile.locationInfo = argparse.Namespace()       
                 
     def _leesHeader(self, f):
@@ -124,13 +124,13 @@ class __his_class(object):
             header.append(f.read(40).decode('windows-1252'))  
         return header           
         
-    def _infoFromHeader(self,tijdstapInfo):
+    def _infoFromHeader(self,timestampInfo):
         """
         Lees informatie uit de header
 
         Parameters
         ----------
-        tijdstapInfo : str
+        timestampInfo : str
             De location in string format
 
         Returns
@@ -144,20 +144,20 @@ class __his_class(object):
             Factor welke op de stapgrote toegepast moet worden
         """
 
-        if len(tijdstapInfo) == 40:
-            year = tijdstapInfo[4:8]
-            month = tijdstapInfo[9:11]
-            day = tijdstapInfo[12:14]
-            hours = tijdstapInfo[15:17]
-            minutes = tijdstapInfo[18:20]
-            seconds = tijdstapInfo[21:23]
+        if len(timestampInfo) == 40:
+            year = timestampInfo[4:8]
+            month = timestampInfo[9:11]
+            day = timestampInfo[12:14]
+            hours = timestampInfo[15:17]
+            minutes = timestampInfo[18:20]
+            seconds = timestampInfo[21:23]
 
             beginDate = datetime(int(year), int(month), int(day), int(hours), int(minutes), int(seconds))
 
-            timeStepInterval = tijdstapInfo[-2:-1]
-            timeStepFactor = int(tijdstapInfo[30:-2])
+            timeStepInterval = timestampInfo[-2:-1]
+            timeStepFactor = int(timestampInfo[30:-2])
         else:
-            self.__errors__.unexpectedT0Error()
+            self.__errors__.unexpectedT0Error(timestampInfo)
 
         return beginDate, timeStepInterval, timeStepFactor    
 
@@ -182,14 +182,14 @@ class __his_class(object):
             try:
                 # parse hia parameters to list of dict
                 parameters = [{'index':int(val)-1, 'long name':config['Long Parameters'][val]} for val in config['Long Parameters']]
-                self.hiaFile.variabeleInfo.variabelen = parameters
+                self.hiaFile.parameterInfo.parameters = parameters
             except KeyError as e:
                 self.__errors__.longParametersNotFound()
 
         except:
             # hia doesn't exist return empty objects
             self.hiaFile.locationInfo.locations = []
-            self.hiaFile.variabeleInfo.variabelen = []
+            self.hiaFile.parameterInfo.parameters = []
     
     def _leesAdmin(self, f):
         """
@@ -198,10 +198,10 @@ class __his_class(object):
         self.hisFile.header = self._leesHeader(f)
 
         # lees info van header
-        self.hisFile.tijdstapInfo.beginDate, self.hisFile.tijdstapInfo.timeStepInterval, self.hisFile.tijdstapInfo.timeStepFactor = self._infoFromHeader(self.hisFile.header[3])        
+        self.hisFile.timestampInfo.beginDate, self.hisFile.timestampInfo.timeStepInterval, self.hisFile.timestampInfo.timeStepFactor = self._infoFromHeader(self.hisFile.header[3])        
 
-        # lees aantal variablelen
-        self.hisFile.variabeleInfo.numVar = np.fromfile(f,np.int,1)[0]    
+        # lees aantal parameters
+        self.hisFile.parameterInfo.numPar = np.fromfile(f,np.int,1)[0]    
 
         # lees aantal locations
         self.hisFile.locationInfo.numLoc = np.fromfile(f,np.int,1)[0]    
@@ -209,13 +209,13 @@ class __his_class(object):
         # lambda function to split string
         split_string = lambda x, n: [x[i:i+n] for i in range(0, len(x), n)]
         
-        # lees variabelen
-        self.hisFile.variabeleInfo.variabelen = []
-        var_string = f.read(self.hisFile.variabeleInfo.numVar * 20).decode('windows-1252')
-        self.hisFile.variabeleInfo.variabelen = split_string(var_string, 20)
+        # lees parameters
+        self.hisFile.parameterInfo.parameters = []
+        param_string = f.read(self.hisFile.parameterInfo.numPar * 20).decode('windows-1252')
+        self.hisFile.parameterInfo.parameters = split_string(param_string, 20)
 
-#         for i in range(self.hisFile.variabeleInfo.numVar):
-#             self.hisFile.variabeleInfo.variabelen.append(f.read(20).decode('windows-1252'))    
+#         for i in range(self.hisFile.parameterInfo.numPar):
+#             self.hisFile.parameterInfo.parameters.append(f.read(20).decode('windows-1252'))    
 
         # Lees locations
         self.hisFile.locationInfo.id = []
@@ -227,56 +227,56 @@ class __his_class(object):
             self.hisFile.locationInfo.locations.append(f.read(20).decode('windows-1252').rstrip())
             
 
-        # lees tijdstappen
+        # lees timestamps
         self.hisFile.headerSize = f.tell()
         self.hisFile.locationInfo.numTime = int((self.hisFile.hisFileSize - self.hisFile.headerSize) /
-                      (self.hisFile.locationInfo.numLoc * self.hisFile.variabeleInfo.numVar + 1) / 4)
+                      (self.hisFile.locationInfo.numLoc * self.hisFile.parameterInfo.numPar + 1) / 4)
 
         aantalBytesPerStap = int((self.hisFile.hisFileSize - self.hisFile.headerSize) / self.hisFile.locationInfo.numTime)
 
         byteNr = self.hisFile.headerSize
 
-        self.hisFile.tijdstapInfo.moments = []
+        self.hisFile.timestampInfo.moments = []
         
-        self.hisFile.tijdstapInfo.offset = []
+        self.hisFile.timestampInfo.offset = []
         for i in range(self.hisFile.locationInfo.numTime):
             f.seek(byteNr)
             moment = np.fromfile(f,np.int,1)[0]
 
-            if self.hisFile.tijdstapInfo.timeStepInterval == 's':
-                self.hisFile.tijdstapInfo.moments.append(self.hisFile.tijdstapInfo.beginDate + timedelta(seconds = (float(moment) * self.hisFile.tijdstapInfo.timeStepFactor)))
-            elif self.hisFile.tijdstapInfo.timeStepInterval == 'm':
-                self.hisFile.tijdstapInfo.moments.append(self.hisFile.tijdstapInfo.beginDate + timedelta(minutes = (float(moment) * self.hisFile.tijdstapInfo.timeStepFactor)))
-            elif self.hisFile.tijdstapInfo.timeStepInterval == 'h':
-                self.hisFile.tijdstapInfo.moments.append(self.hisFile.tijdstapInfo.beginDate + timedelta(hours= (float(moment) * self.hisFile.tijdstapInfo.timeStepFactor)))
-            elif self.hisFile.tijdstapInfo.timeStepInterval == 'd':
-                self.hisFile.tijdstapInfo.moments.append(self.hisFile.tijdstapInfo.beginDate + timedelta(days= (float(moment) * self.hisFile.tijdstapInfo.timeStepFactor)))
-            self.hisFile.tijdstapInfo.offset.append(f.tell())
+            if self.hisFile.timestampInfo.timeStepInterval == 's':
+                self.hisFile.timestampInfo.moments.append(self.hisFile.timestampInfo.beginDate + timedelta(seconds = (float(moment) * self.hisFile.timestampInfo.timeStepFactor)))
+            elif self.hisFile.timestampInfo.timeStepInterval == 'm':
+                self.hisFile.timestampInfo.moments.append(self.hisFile.timestampInfo.beginDate + timedelta(minutes = (float(moment) * self.hisFile.timestampInfo.timeStepFactor)))
+            elif self.hisFile.timestampInfo.timeStepInterval == 'h':
+                self.hisFile.timestampInfo.moments.append(self.hisFile.timestampInfo.beginDate + timedelta(hours= (float(moment) * self.hisFile.timestampInfo.timeStepFactor)))
+            elif self.hisFile.timestampInfo.timeStepInterval == 'd':
+                self.hisFile.timestampInfo.moments.append(self.hisFile.timestampInfo.beginDate + timedelta(days= (float(moment) * self.hisFile.timestampInfo.timeStepFactor)))
+            self.hisFile.timestampInfo.offset.append(f.tell())
             byteNr += aantalBytesPerStap
-        self.hisFile.tijdstapInfo.N = np.array(self.hisFile.tijdstapInfo.moments).max().year - np.array(self.hisFile.tijdstapInfo.moments).min().year + 1
+        self.hisFile.timestampInfo.N = np.array(self.hisFile.timestampInfo.moments).max().year - np.array(self.hisFile.timestampInfo.moments).min().year + 1
         return True
 
-    def _locOffset(self, loc, var):
+    def _locOffset(self, loc, param):
         """
-        Krijg de offset van de variabele
+        Krijg de offset van de parameter
 
         Parameters
         ----------
         loc : string    
             De location in kwestie
-        var : string
-            De variabele in kwestie        
+        param : string
+            De parameter in kwestie        
 
         Returns
         -------
         locOffset : int
             De offset van de location in bytes
         """
-        #  Zoek de index van de variabele
+        #  Zoek de index van de parameter
         try:
-            varFound = self.hisFile.variabeleInfo.variabelen.index(var)
+            parFound = self.hisFile.parameterInfo.parameters.index(param)
         except :
-            self.__errors__.variabeleNotFound()            
+            self.__errors__.parameterNotFound(param)            
 
         # Zoek de index/id van de location
         try:
@@ -284,9 +284,9 @@ class __his_class(object):
             # locFound = next((item for item in self.hisFile.locationInfo.locations if item['location'] == loc))
             locFound = self.hisFile.locationInfo.locations.index(loc)
         except :
-            self.__errors__.locationNotFound()
+            self.__errors__.locationNotFound(loc)
 
-        locOffset = locFound * self.hisFile.variabeleInfo.numVar * 4 + varFound * 4
+        locOffset = locFound * self.hisFile.parameterInfo.numPar * 4 + parFound * 4
 
         return locOffset   
     
@@ -310,9 +310,9 @@ class __his_class(object):
         """
         Merge parameters his en hia
         """
-        df_his_pars = pd.DataFrame(self.hisFile.variabeleInfo.variabelen, columns=['his name'])
+        df_his_pars = pd.DataFrame(self.hisFile.parameterInfo.parameters, columns=['his name'])
         
-        df_hia_pars = pd.DataFrame(self.hiaFile.variabeleInfo.variabelen)
+        df_hia_pars = pd.DataFrame(self.hiaFile.parameterInfo.parameters)
         # only merge if df_hia_pars contains items
         if not df_hia_pars.empty:        
             df_hia_pars.set_index('index', inplace=True)
@@ -320,7 +320,7 @@ class __his_class(object):
             df_pars = pd.merge(df_his_pars, df_hia_pars, left_index=True, right_index=True, how='outer')
             df_pars.loc[df_pars.isnull().any(axis=1), 'long name'] = df_pars[df_pars.isnull().any(axis=1)]['his name']
             
-            self.hisFile.variabeleInfo.variabelen = df_pars['long name'].tolist()
+            self.hisFile.parameterInfo.parameters = df_pars['long name'].tolist()
         
     def GetLocations(self):
         """
@@ -361,7 +361,7 @@ class __his_class(object):
         parameters : list
             The parameters available within the his-file
         """        
-        parameters = self.hisFile.variabeleInfo.variabelen
+        parameters = self.hisFile.parameterInfo.parameters
         return parameters    
     
     def KrijgParameters(self):#, his_file):
@@ -379,7 +379,7 @@ class __his_class(object):
             De parameters welke bekend zijn binnen het his-bestand
         """
         warnings.warn("this function will deprecate in the future, use function hkvsobekpy.GetParameters")
-        parameters = self.hisFile.variabeleInfo.variabelen
+        parameters = self.hisFile.parameterInfo.parameters
         return parameters
 
     def GetTimestamps(self):
@@ -391,12 +391,12 @@ class __his_class(object):
         timestamps : list of datetime objects
             The timestamps available within the his-file
         """
-        timestamps = self.hisFile.tijdstapInfo.moments
+        timestamps = self.hisFile.timestampInfo.moments
         return timestamps
 
     def KrijgTijdstappen(self):#, his_file):
         """
-        Krijg de tijdstappen beschikbaar in de his-file. 
+        Krijg de timestamps beschikbaar in de his-file. 
         
         Parameters
         ----------
@@ -405,13 +405,13 @@ class __his_class(object):
             
         Returns
         -------
-        tijdstappen : list
-            De tijdstappen welke bekend zijn binnen het his-bestand
+        timestamps : list
+            De timestamps welke bekend zijn binnen het his-bestand
         """
         warnings.warn("this function will deprecate in the future, use function hkvsobekpy.GetTimestamps")
         #self.LeesMetadata(his_file)
-        tijdstappen = self.hisFile.tijdstapInfo.moments
-        return tijdstappen    
+        timestamps = self.hisFile.timestampInfo.moments
+        return timestamps    
     
     def ReadMetadata(self, his_file, hia_file='auto'):
         """
@@ -434,7 +434,7 @@ class __his_class(object):
             p = myHisFile.resolve()
         except:
             # doesn't exist
-            self.__errors__.fileNotFound()
+            self.__errors__.fileNotFound(myHisFile)
 
         # exists    
         self.hisFile.hisFileName = str(p)            
@@ -464,7 +464,7 @@ class __his_class(object):
                     myHiaFile.resolve()
                 except:
                     # doesn't exist
-                    self.__errors__.fileNotFound()
+                    self.__errors__.fileNotFound(myHiaFile)
             # file exist, read files 
             # merge with locations and parameters where possible
             self._leesHia(myHiaFile)
@@ -504,7 +504,7 @@ class __his_class(object):
             p = myHisFile.resolve()
         except:
             # doesn't exist
-            self.__errors__.fileNotFound()
+            self.__errors__.fileNotFound(myHisFile)
 
         # exists    
         self.hisFile.hisFileName = str(p)            
@@ -534,7 +534,7 @@ class __his_class(object):
                     myHiaFile.resolve()
                 except:
                     # doesn't exist
-                    self.__errors__.fileNotFound()
+                    self.__errors__.fileNotFound(myHiaFile)
             # file exist, read files 
             # merge with locations and parameters where possible
             self._leesHia(myHiaFile)
@@ -624,9 +624,11 @@ class __his_class(object):
             # if there are multiple events in a single year with same value take the first
             df_unique = pd.DataFrame(df.index, columns=['date'])
             df_unique['index'] = df_unique['date'].apply(lambda x:x.year)
-            df_unique = df_unique.groupby('index').first()
-            slice_unique_values = df_unique['date'].values
-            df = df.loc[slice_unique_values]
+            df_unique = df_unique.groupby('index').first()            
+            #slice_unique_values = df_unique['date'].values
+            #df = df.loc[slice_unique_values]
+            ix2 = pd.np.isin(df.index.values, df_unique.date.values)
+            df = df[ix2]
 
         
         elif jaarmax_as=='none':
@@ -637,14 +639,14 @@ class __his_class(object):
 
     def EnkeleWaardenArray(self, location, parameter, startMMdd=(1,1), endMMdd=(12,31), jaarmax_as='none'):
         """
-        Lees de waarden van een enkele variabele op een enkele location
+        Lees de waarden van een enkele parameter op een enkele location
 
         Parameters
         ----------
         location : string    
             De location in kwestie (alleen de eerste 21 karakters, anders cutoff)
         parameter : string
-            De variabele in kwestie (alleen de eerste 21 karakters, anders cutoff)
+            De parameter in kwestie (alleen de eerste 21 karakters, anders cutoff)
         startMMdd : tuple
             Tuple in het formaat (M,d). Bepaling van de start datum van de periode. Genoemde datum is inclusief
         endMMdd : tuple
@@ -660,7 +662,7 @@ class __his_class(object):
         Returns
         -------
         df : DataFrame
-            DataFrame met een multicolumn van variabele en locations met datetime index en 
+            DataFrame met een multicolumn van parameter en locations met datetime index en 
             de bijbehorende waarden
             
         Examples
@@ -700,19 +702,19 @@ class __his_class(object):
             self.__errors__.metadataError()
         
         loc = location
-        var = parameter
+        param = parameter
         
         with open(self.hisFile.hisFileName, "rb") as f: 
-            varLocOffset = self._locOffset(loc, var)
+            paramLocOffset = self._locOffset(loc, param)
             values= []
 
             for i in range(self.hisFile.locationInfo.numTime):
-                offset = self.hisFile.tijdstapInfo.offset[i] + varLocOffset                
+                offset = self.hisFile.timestampInfo.offset[i] + paramLocOffset                
                 seek = f.seek(offset)
                 values.append(np.fromfile(f,np.float32,1)[0])
 
         # maak dataframe
-        df = pd.DataFrame(data=values, index=self.hisFile.tijdstapInfo.moments, columns=[(loc,var)])
+        df = pd.DataFrame(data=values, index=self.hisFile.timestampInfo.moments, columns=[(loc,param)])
         df.columns = pd.MultiIndex.from_tuples(df.columns, names=['location','parameter'])
         
         df = self.SelectPeriodeWaardenArray(df, startMMdd=startMMdd, endMMdd=endMMdd, jaarmax_as=jaarmax_as)
@@ -722,7 +724,7 @@ class __his_class(object):
     def MultiWaardenArray(self, locations, parameters, startMMdd=(1,1), endMMdd=(12,31), 
                           jaarmax_as='none', drop_lege_jaren=True):
         """
-        Lees de waarden van meerdere variabelen op meerdere locations
+        Lees de waarden van meerdere parameters op meerdere locations
 
         Parameters
         ----------
@@ -748,7 +750,7 @@ class __his_class(object):
         Returns
         -------
         df : DataFrame
-            DataFrame met een multicolumn van variabele en locations met datetime index en 
+            DataFrame met een multicolumn van parameter en locations met datetime index en 
             de bijbehorende waarden
             
         Examples
@@ -762,7 +764,7 @@ class __his_class(object):
         """
         # error checking
         if jaarmax_as not in ('year', 'none'):
-            self.__errors__.jaarmaxError()
+            self.__errors__.annualmaxError()
             
         # define empty dataframe
         clmns = pd.MultiIndex.from_product([parameters,locations], names=['parameters','locations'])
@@ -770,10 +772,10 @@ class __his_class(object):
         # voor een MultiWaardenArray wordt alleen een jaar meegenomen als index
         # het hangt van een seizoen filter af of er gebeurtenissen voor dat jaar zijn. Bepaal dit eerst
         loc0 = self.hisFile.locationInfo.locations[0]
-        par0 = self.hisFile.variabeleInfo.variabelen[0]
+        par0 = self.hisFile.parameterInfo.parameters[0]
         idx = self.EnkeleWaardenArray(loc0, par0, jaarmax_as=jaarmax_as).index
         
-        self.hisFile.tijdstapInfo.N
+        self.hisFile.timestampInfo.N
         
         df_full = pd.DataFrame(index=idx, columns=clmns)
         df_full.index.name='date'
@@ -846,14 +848,14 @@ class __his_class(object):
             containing all available timesteps for all locations and parameters in his-file
         """
         # get metadata from appropriate his-file
-        no_moments = len(self.hisFile.tijdstapInfo.moments)
-        no_params = self.hisFile.variabeleInfo.numVar
+        no_moments = len(self.hisFile.timestampInfo.moments)
+        no_params = self.hisFile.parameterInfo.numPar
         no_locs = self.hisFile.locationInfo.numLoc
 
         # the byte range goes like:
         # for t in times: for l in locs: for p in params: print (t, l, p)
         with open(self.hisFile.hisFileName, "rb") as f: 
-            start = self.hisFile.tijdstapInfo.offset[0]
+            start = self.hisFile.timestampInfo.offset[0]
             no_values = (no_moments * no_params * no_locs) + no_moments
             seek = f.seek(start-4)    
             values = np.fromfile(f, np.float32, no_values) # np.float32 == np.dtype('f4')
@@ -868,11 +870,11 @@ class __his_class(object):
         
         # create multi-index for the columns
         lable_locs = self.hisFile.locationInfo.locations
-        lable_vars = self.hisFile.variabeleInfo.variabelen
-        cols = pd.MultiIndex.from_product([lable_locs, lable_vars])
+        lable_params = self.hisFile.parameterInfo.parameters
+        cols = pd.MultiIndex.from_product([lable_locs, lable_params])
 
         # parse into dataframe
-        df = pd.DataFrame(values, index=self.hisFile.tijdstapInfo.moments, columns=cols)    
+        df = pd.DataFrame(values, index=self.hisFile.timestampInfo.moments, columns=cols)    
         df = df.swaplevel(i=0, j=1, axis=1)
         df.sort_index(axis=1,inplace=True)
         return df

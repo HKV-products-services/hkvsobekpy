@@ -36,31 +36,27 @@ Metadata of the his-file is read first and using this metadata block subequent f
     
 Such as the functions to get the locations, timesteps and parameters:
     
-    locaties = calcpnt.KrijgLokaties()
-    tijdstappen = calcpnt.KrijgTijdstappen()
-    parameters = calcpnt.KrijgParameters()
+    locations = calcpnt.GetLocations()
+    timestamps = calcpnt.GetTimestamps()
+    parameters = calcpnt.GetParameters()
 
     print("""\
     first 5 locations:     {0}
     last 2 timesteps:      {1}
-    all parameters:        {2}""".format(locaties[0:5],
-                                         tijdstappen[-2:],
+    all parameters:        {2}""".format(locations[0:5],
+                                         timestamps[-2:],
                                          parameters))
 
     first 5 locations:     ['1', '126', '11', '8', '14']
     last 2 timesteps:      [datetime.datetime(2014, 10, 18, 15, 20), datetime.datetime(2014, 12, 12, 10, 20)]
     all parameters:        ['Waterlevel max. (m A', 'Waterdepth max. (m) ']
     
-To read a single timeseries use:
+To read the whole his into a Pandas DataFramesingle:
 
-    df = calcpnt .EnkeleWaardenArray(locaties[0],
-        parameters[0],
-        startMMdd=(1, 1),
-        endMMdd=(12, 31),
-        jaarmax_as='date'))
-    df.plot(legend=True)
+    df = calcpnt.Dataframe()
+    df.head()
 
-![alt text](https://github.com/HKV-products-services/hkvsobekpy/blob/master/img/waterlevel.png "single timeseries using location and parameter")
+![alt text](https://github.com/HKV-products-services/hkvsobekpy/blob/master/img/table_view.png "dataframe head of his file")
 
 See the jupyter notebook 'waterstand statistiek.ipynb' in the notebook folder for more usage examples. For example how to get the return periods T25, T50 and T100 using a Gumbel function fit,  while the T10 is computed using a weigted average of the four nearest events
 

@@ -17,6 +17,8 @@ import pandas as pd
 from scipy import optimize
 import fire
 import warnings
+import copy
+
 try:
     shell = get_ipython().__class__.__name__
     if shell == 'ZMQInteractiveShell':
@@ -350,7 +352,7 @@ class __waterlevelstat_class(object):
             S1_GumbelT = np.delete(S1_GumbelT, idx)
             S1_GumbelWS = np.delete(S1_GumbelWS, idx)       
         
-        fig=plt.figure(figsize=(8,6))
+        fig=plt.figure(figsize=(13,6))
         ax = fig.add_subplot(111)
         ax.set_xscale('log')
 
@@ -402,10 +404,12 @@ class __waterlevelstat_class(object):
         ax.grid(True,which='both', axis='both', linestyle='-', color= '0.75', zorder=0)
 
         # legend settings
-        legend = plt.legend(loc='upper left',prop={'size':10})
+        #legend = plt.legend(loc='upper left',prop={'size':10})
+        legend = plt.legend(loc=1, bbox_to_anchor=(1.6, 1.01),prop={'size':10})
         legend.get_frame().set_facecolor('white')
         legend.get_frame().set_alpha(1)
-        legend.get_frame().set_linewidth(1)
+        #legend.get_frame().set_linewidth(1)
+        legend.get_frame().set_linewidth(0)
         legend.get_frame().set_edgecolor('#8B8B8B')
 
         # table settings
@@ -531,11 +535,67 @@ class __waterlevelstat_class(object):
     def AfleidingParameters(self, df_enkel, N, vensterArray, GumbelT, TOI, startMMdd=(1,1), endMMdd=(12,31), 
                             jaarmax_as='date', Ggi=0.44, GgN=0.12):
         """
+        Voor het afleiden van de waterstanden welke horen bij de verschillende
+        terugkeertijden kan gebruik gemaakt worden van plotposities/Gumbel fit en een 
+        gewogen gemiddelde.        
         
+        Parameters
+        ----------
+        N : int
+            aantal jaren voor bepaling van de plotposities
+        vensterArray : array
+            het venster welke gebruikt wordt als filter om de gebeurtenissen mee te 
+            nemen voor de bepaling van de Gumbel fit. Het venster is een array van 
+            twee waarden, vaak wordt [0,10] gekozen, waar 0 overeenkomt met de meest 
+            extreme waarde en 10 de op 10 na meest extreme waarde. In ander woorden, 
+            in dit geval is het venster de 10 meest extreme waarden.
+        GumbelT : array
+            een array met terugkeertijden welke meegenomen moet worden als locations 
+            waarover een de waterstand moet bepaald worden aan de hand van de 
+            Gumbel fit. Een vaak gebruikte array is [10,25,50,100] wat overeenkomt met 
+            de T10, T25, T50 en T100
+        TOI : int
+            Waarde met de terugkeertijd of interest voor het bepalen van het gewogen 
+            gemiddelde. Dit wordt gebruikt voor een terugkeertijd welke tenminste 2 
+            gebeurtenissen en 2 gebeurtenissen na zicht heeft. Gewoonlijk kan dit 
+            gebruikt worden voor het bepalen van de T10, welke soms nog in de 
+            'knik' ligt.
+        startMMdd : tuple
+            Tuple in het formaat (maand,dag). Bepaling van de start datum van de 
+            periode. Genoemde datum is inclusief. Voorbeeld (5,15) staat voor 
+            maand 5, dag 15.
+        endMMdd : tuple
+            Tuple in het formaat (maand,dag). Bepaling van de eind datum van de 
+            periode. Genoemde datum is inclusief. Voorbeeld (10,15) staat voor 
+            maand 10, dag 15.
+        jaarmax_as : str
+            Mogelijkheden om de DataFrame te groeperen op basis van jaar om het jaarmaxima te bepalen. 
+            Het jaarmaxima wordt bepaald nadat de slice van de jaarlijkse periode is toegepast. 
+            Keuze bestaat uit:            
+            'date' - bepaalt de jaarlijkse maxima en geeft de maximale waarde terug met de exacte datum van deze gebeurtenis
+            'year' - bepaalt de jaarlijkse maxima en geeft de maximale waarde terug met het jaar van de gebeurtenis
+            'none' - retourneert alle gebeurtenissen in elk jaar            
+        Ggi : float
+            Gringgorten plotposities i (standaard: 0.44)
+        GgN : float
+            Gringgorten plotposities N (standaard: 0.12)          
+            
+        Returns:
+        --------
+        object.stats:
+        - STEP 1 Gumbel Fit voor geselecteerde T's [eg. T10,T25,T50,T100] voor alle buien
+        - STEP 2 Gumbel Fit voor T10 voor alleen zomerbuien
+        - STEP 3 Gewogen gemiddelde voor T10 voor alle buien
+        - STEP 4 Gewogen gemiddelde voor T10 voor alleen de zomerbuien
+        
+        Literature
+        ----------
+        Voor bepaling Gringorten coefficienten zie bijv: http://glossary.ametsoc.org/wiki/Gringorten_plotting_position            
         """
         self = self._initNamespaces()
         # STEP 1 Gumbel Fit voor geselecteerde T's [eg. T10,T25,T50,T100] voor alle buien
-        S1_param4fig, S1_df_gumbel = self._enkeleGumbelFit(df_enkel, N=N, vensterArray=vensterArray, GumbelT=GumbelT,Ggi=Ggi,GgN=GgN)
+        df_enkel_year_max = his_reader.SelectPeriodeWaardenArray(df_enkel, jaarmax_as='date')
+        S1_param4fig, S1_df_gumbel = self._enkeleGumbelFit(df_enkel_year_max, N=N, vensterArray=vensterArray, GumbelT=GumbelT,Ggi=Ggi,GgN=GgN)
         self.stats.stap1.vAmin = S1_param4fig[0]
         self.stats.stap1.vAmax = S1_param4fig[1]
         self.stats.stap1.ws_srt = S1_param4fig[2]
@@ -559,7 +619,7 @@ class __waterlevelstat_class(object):
         self.stats.stap2.endMMdd = endMMdd
         
         # STEP 3 Gewogen gemiddelde voor T10 voor alle buien
-        self.stats.stap3.WSarray_TOI_jaar, self.stats.stap3.WSarray_sel_jaar, self.stats.stap3.Tarray_sel_jaar = self._gewogenGemiddelde(df_enkel, N=N, TOI=TOI)
+        self.stats.stap3.WSarray_TOI_jaar, self.stats.stap3.WSarray_sel_jaar, self.stats.stap3.Tarray_sel_jaar = self._gewogenGemiddelde(df_enkel_year_max, N=N, TOI=TOI)
         self.stats.stap3.TOI = TOI
         self.stats.stap3.startMMdd = startMMdd
         self.stats.stap3.endMMdd = endMMdd        
@@ -570,7 +630,7 @@ class __waterlevelstat_class(object):
         self.stats.stap4.startMMdd = startMMdd
         self.stats.stap4.endMMdd = endMMdd
         
-        return self
+        return copy.copy(self)
         
     def EnsembleRunner(self, out_folder, his_file, shp_file, shp_key='nodeID', parameter='auto',
                        startMMdd=(5,15), endMMdd=(10,15), vensterArray=[0,10], GumbelT=[10,25,50,100], 
