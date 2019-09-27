@@ -1,4 +1,5 @@
 import os
+import multiprocessing as mp
 try:
     from pathlib import Path
 except:    
@@ -253,6 +254,7 @@ class __his_class(object):
                 self.hisFile.timestampInfo.moments.append(self.hisFile.timestampInfo.beginDate + timedelta(days= (float(moment) * self.hisFile.timestampInfo.timeStepFactor)))
             self.hisFile.timestampInfo.offset.append(f.tell())
             byteNr += aantalBytesPerStap
+        self.hisFile.timestampInfo.offset = np.array(self.hisFile.timestampInfo.offset, dtype=np.int64)
         self.hisFile.timestampInfo.N = np.array(self.hisFile.timestampInfo.moments).max().year - np.array(self.hisFile.timestampInfo.moments).min().year + 1
         return True
 
@@ -321,6 +323,17 @@ class __his_class(object):
             df_pars.loc[df_pars.isnull().any(axis=1), 'long name'] = df_pars[df_pars.isnull().any(axis=1)]['his name']
             
             self.hisFile.parameterInfo.parameters = df_pars['long name'].tolist()
+            
+    def _process_wrapper(self, chunk, values):
+        with open(self.hisFile.hisFileName, "rb") as f:
+            for offset in chunk:
+                seek = f.seek(offset)
+                values.append({'offset_val': offset, 'value':np.fromfile(f,np.float32,1)[0]}) 
+                
+    def _chunkify(self, array, no_chunks):
+        chunks = np.array_split(array, no_chunks)
+        chunks = [x for x in chunks if x.size > 0]
+        return chunks                
         
     def GetLocations(self):
         """
@@ -704,12 +717,13 @@ class __his_class(object):
         loc = location
         param = parameter
         
+        paramLocOffset = self._locOffset(loc, param)
+        offsets = self.hisFile.timestampInfo.offset + paramLocOffset
+        values= []
+        
         with open(self.hisFile.hisFileName, "rb") as f: 
-            paramLocOffset = self._locOffset(loc, param)
-            values= []
 
-            for i in range(self.hisFile.locationInfo.numTime):
-                offset = self.hisFile.timestampInfo.offset[i] + paramLocOffset                
+            for offset in offsets:               
                 seek = f.seek(offset)
                 values.append(np.fromfile(f,np.float32,1)[0])
 
