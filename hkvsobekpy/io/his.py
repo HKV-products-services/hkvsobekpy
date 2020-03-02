@@ -202,10 +202,10 @@ class __his_class(object):
         self.hisFile.timestampInfo.beginDate, self.hisFile.timestampInfo.timeStepInterval, self.hisFile.timestampInfo.timeStepFactor = self._infoFromHeader(self.hisFile.header[3])        
 
         # lees aantal parameters
-        self.hisFile.parameterInfo.numPar = np.fromfile(f,np.int,1)[0]    
+        self.hisFile.parameterInfo.numPar = np.fromfile(f,np.int32,1)[0]    
 
         # lees aantal locations
-        self.hisFile.locationInfo.numLoc = np.fromfile(f,np.int,1)[0]    
+        self.hisFile.locationInfo.numLoc = np.fromfile(f,np.int32,1)[0]    
 
         # lambda function to split string
         split_string = lambda x, n: [x[i:i+n] for i in range(0, len(x), n)]
@@ -224,7 +224,7 @@ class __his_class(object):
         
         #self.hisFile.locationInfo.locations = np.fromfile(f, np.dtype("i2, V20" ), 2)#, U20"), 1)
         for i in range(self.hisFile.locationInfo.numLoc):            
-            self.hisFile.locationInfo.id.append(np.fromfile(f,np.int,1)[0])
+            self.hisFile.locationInfo.id.append(np.fromfile(f,np.int32,1)[0])
             self.hisFile.locationInfo.locations.append(f.read(20).decode('windows-1252').rstrip())
             
 
@@ -242,7 +242,7 @@ class __his_class(object):
         self.hisFile.timestampInfo.offset = []
         for i in range(self.hisFile.locationInfo.numTime):
             f.seek(byteNr)
-            moment = np.fromfile(f,np.int,1)[0]
+            moment = np.fromfile(f,np.int32,1)[0]
 
             if self.hisFile.timestampInfo.timeStepInterval == 's':
                 self.hisFile.timestampInfo.moments.append(self.hisFile.timestampInfo.beginDate + timedelta(seconds = (float(moment) * self.hisFile.timestampInfo.timeStepFactor)))
