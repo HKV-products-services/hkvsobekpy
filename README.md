@@ -1,4 +1,6 @@
 # hkvsobekpy
+[![PyPI version](https://img.shields.io/pypi/v/hkvsobekpy.svg)](https://pypi.org/project/hkvsobekpy)
+
 package for water-statistics and plausibility checker using his- and bui-files. 
 A his-file is a binary file object used for read/write in- and output in SOBEK. The file contains parameters, locations and timesteps. Since it is a binary format it always has been difficult to use this files directly in explorative analysis or automated workflows. This package provide options to work with these his-files within Python.
 
